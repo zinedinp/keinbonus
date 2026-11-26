@@ -1,0 +1,42 @@
+[package]
+name = "keinbonus"
+version = "0.1.0"
+authors = ["Zinedin Polic"]
+edition = "2024"
+rust-version = "1.100.0"
+description = "Colour ground truth: CICP (H.273) colour spaces, transfer functions, YCbCr matrices, bit depths, chroma subsampling, pixel layouts and HDR"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+categories = ["multimedia::video", "multimedia::images", "no-std"]
+keywords = ["color", "yuv", "hdr", "h273", "bt2100"]
+repository = "https://github.com/zinedinp/keinbonus"
+
+[features]
+default = []
+# SIMD kernels for the fixed-point fast paths (`keinbonus::simd`), through
+# miraculix; bit for bit the scalar `keinbonus::fast` results.
+simd = ["dep:miraculix"]
+
+[dependencies]
+# Transcendental functions without std, and the same bits on every platform
+# (std calls the platform's libm, which differs in the last place between
+# MSVC and glibc): a reference has to be deterministic.
+libm = "0.2.16"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# The formulas use the standards' symbols (r, g, b, y, e, ...): renaming
+# them would make checking against H.273 and BT.2100 harder.
+many_single_char_names = "allow"
+
+# Only the architectures with kernels in `src/simd/` use it.
+[target.'cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64", target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
+miraculix = { version = "0.7.0", optional = true, default-features = false }
+
+[[example]]
+name = "throughput"
+required-features = ["simd"]
+
+[[example]]
+name = "stages"
+required-features = ["simd"]
