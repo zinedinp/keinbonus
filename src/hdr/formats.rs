@@ -291,6 +291,80 @@ impl Hdr10Plus {
     }
 }
 
+#[cfg(feature = "display")]
+impl Hdr10Plus {
+    /// One picture's statistics of `max(R, G, B)`, cd/m²: its peak
+    /// (`maxscl` for all three components), its average and `(percentage,
+    /// percentile)` pairs, in the payload's units.
+    #[must_use]
+    pub fn from_maxrgb(peak: f64, average: f64, percentiles: &[(u8, f64)]) -> Self {
+        let code = |nits: f64| luminance_code(nits);
+        Self {
+            maxscl: [code(peak); 3],
+            average_maxrgb: code(average),
+            distribution_maxrgb: percentiles.iter().map(|&(p, n)| (p, code(n))).collect(),
+            ..Self::default()
+        }
+    }
+
+    /// A basic tone curve for a display of `target` cd/m², from the
+    /// statistics' peak, with `anchors` Bezier anchors (at most 15): light
+    /// up to the knee as it is, then a shoulder that starts at that slope
+    /// and ends flat at the scene's peak. The knee sits at half the target,
+    /// lower where the curve's degree can't start that steep otherwise
+    /// (at the target's start when the scene is more than `anchors + 1`
+    /// times the target, the slope then less). ST 2094-40 leaves the curve
+    /// to whoever makes the metadata; this one is keinbonus's own. A scene
+    /// within the target keeps its light: the knee at the scene's peak.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss,
+        reason = "codes clipped to their ranges first"
+    )]
+    pub fn fit_basic_curve(&mut self, target: f64, anchors: usize) {
+        self.targeted_system_display_maximum_luminance = round(math::clip3(0.0, 134_217_727.0, target)) as u32;
+        let peak = self.scene_peak();
+        let knee_code = |v: f64| round(math::clip3(0.0, 1.0, v) * 4095.0) as u16;
+        if target <= 0.0 || peak <= target {
+            let ratio = if target > 0.0 { peak / target } else { 1.0 };
+            self.knee_point = (4095, knee_code(ratio));
+            self.bezier_curve_anchors.clear();
+            return;
+        }
+        let anchors = anchors.min(15);
+        let degree = anchors as f64 + 1.0;
+        let ratio = peak / target;
+        // The knee's share of the target that lets the identity's slope
+        // (`(ratio - u) / (1 - u)`) be at most the curve's start, `degree`.
+        let u = if anchors == 0 {
+            0.5
+        } else {
+            math::clip3(0.0, 0.5, (degree - ratio) / (degree - 1.0))
+        };
+        let knee = (knee_code(u * target / peak), knee_code(u));
+        let (kx, ky) = (f64::from(knee.0) / 4095.0, f64::from(knee.1) / 4095.0);
+        // The identity's slope within the curve's part above the knee.
+        let slope = (peak / target) * (1.0 - kx) / (1.0 - ky);
+        let first = slope / degree;
+        self.knee_point = knee;
+        self.bezier_curve_anchors = (1..=anchors)
+            .map(|k| round(math::clip3(0.0, 1.0, first * k as f64) * 1023.0) as u16)
+            .collect();
+    }
+}
+
+/// cd/m² in the payload's luminance units (0.1 cd/m², 0..=100 000).
+#[cfg(feature = "display")]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "clipped to the range first"
+)]
+fn luminance_code(nits: f64) -> u32 {
+    round(math::clip3(0.0, 100_000.0, nits * 10.0)) as u32
+}
+
 /// Dolby Vision profiles (bitstream profiles of the Dolby Vision
 /// specification).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -473,6 +547,38 @@ mod tests {
     use crate::cicp::ColourPrimaries;
     use crate::math::close;
     use alloc::vec;
+
+    #[cfg(feature = "display")]
+    #[test]
+    fn a_fitted_curve_keeps_light_within_the_target_and_rolls_off_above() {
+        // Within the display: the light as it is.
+        let mut calm = Hdr10Plus::from_maxrgb(600.0, 100.0, &[(50, 80.0), (99, 500.0)]);
+        calm.fit_basic_curve(1000.0, 4);
+        assert_eq!(calm.maxscl, [6000; 3]);
+        assert_eq!(calm.bezier_curve_anchors, Vec::<u16>::new());
+        for nits in [10.0, 300.0, 600.0] {
+            let out = calm.tone_curve(nits / 600.0) * 1000.0;
+            assert!(close(out, nits, 0.2), "{nits}: {out}");
+        }
+        // Above it: as it is up to the knee (a quarter of the target for a
+        // degree 5 curve and four times the target), then down to the peak.
+        let mut bright = Hdr10Plus::from_maxrgb(4000.0, 300.0, &[]);
+        bright.fit_basic_curve(1000.0, 4);
+        assert_eq!(bright.bezier_curve_anchors.len(), 4);
+        let out = |nits: f64| bright.tone_curve(nits / 4000.0) * 1000.0;
+        assert!(close(out(200.0), 200.0, 0.5), "{}", out(200.0));
+        assert!(close(out(4000.0), 1000.0, 1e-9));
+        let mut last = 0.0;
+        for i in 0..=100 {
+            let y = out(f64::from(i) * 40.0);
+            assert!(y >= last - 1e-9, "monotone at {i}");
+            last = y;
+        }
+        // Near the knee the slope is the identity's.
+        let knee = 0.25 * 1000.0;
+        let slope = (out(knee + 20.0) - out(knee)) / 20.0;
+        assert!((slope - 1.0).abs() < 0.1, "{slope}");
+    }
 
     #[test]
     fn mastering_metadata_codes() {
