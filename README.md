@@ -62,6 +62,7 @@ assert_eq!(out.planes[0][0], 573);
 | Layouts | `layout` | planar, NV12/NV21/NV16/NV24, P010/P012/P016/P210/P216/P410/P416, YUY2/UYVY/Y210/Y216, v210, AYUV/Y410/Y412/Y416, RGB8/RGBA8/BGRA8/RGBA16, 10:10:10:2 both ways, FP16/FP32 |
 | HDR processing | `hdr` | display light in cd/m², HLG OOTF (BT.2100), BT.2390 EETF, BT.2408 reference white |
 | HDR formats | `hdr::formats` | HDR10 (ST 2086, CTA-861.3, HEVC and AV1 codings), HDR10+ (ST 2094-40 data and tone curve), HLG, Dolby Vision (profiles, base layers, configuration record) |
+| Display (feature `display`) | `hdr::itm`, `primaries::gamut`, `hdr::formats::edid`, `hdr::shader` | SDR to HDR and back (BT.2446-1 Method C), exact and expanded gamut, EDID colour (E-EDID 1.4, CTA-861.3 HDR static metadata, colorimetry, HDR10+ and Dolby Vision blocks), the constants a shader needs |
 | Half floats | `half` | binary16, rounded once from `f64` |
 | Pipeline | `convert` | any description, depth, range and chroma format to any other |
 

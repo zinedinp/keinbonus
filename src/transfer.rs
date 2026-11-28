@@ -27,11 +27,11 @@ pub const BT709_ALPHA: f64 = 1.099_296_826_809_442;
 /// H.273's `beta` of the BT.709 curve.
 pub const BT709_BETA: f64 = 0.018_053_968_510_807;
 
-const PQ_M1: f64 = 2610.0 / 16384.0;
-const PQ_M2: f64 = 2523.0 / 4096.0 * 128.0;
-const PQ_C1: f64 = 3424.0 / 4096.0;
-const PQ_C2: f64 = 2413.0 / 4096.0 * 32.0;
-const PQ_C3: f64 = 2392.0 / 4096.0 * 32.0;
+pub(crate) const PQ_M1: f64 = 2610.0 / 16384.0;
+pub(crate) const PQ_M2: f64 = 2523.0 / 4096.0 * 128.0;
+pub(crate) const PQ_C1: f64 = 3424.0 / 4096.0;
+pub(crate) const PQ_C2: f64 = 2413.0 / 4096.0 * 32.0;
+pub(crate) const PQ_C3: f64 = 2392.0 / 4096.0 * 32.0;
 
 /// BT.2100's HLG `a`.
 pub const HLG_A: f64 = 0.178_832_77;

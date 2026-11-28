@@ -6,6 +6,9 @@ use crate::Error;
 use crate::cicp::ColourPrimaries;
 use crate::math::{self, Mat3};
 
+#[cfg(feature = "display")]
+pub mod gamut;
+
 /// A point in CIE 1931 xy.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Xy {

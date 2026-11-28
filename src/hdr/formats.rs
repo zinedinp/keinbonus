@@ -14,6 +14,8 @@
 //! shows the base layer ([`DolbyVision::base_layer`]).
 
 use crate::cicp::Cicp;
+#[cfg(feature = "display")]
+pub mod edid;
 use crate::hdr::ToneMap;
 use crate::math::{self, round};
 use crate::primaries::Chromaticities;

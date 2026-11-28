@@ -23,6 +23,10 @@
 use crate::math::{self, log10, pow, pow_odd};
 
 pub mod formats;
+#[cfg(feature = "display")]
+pub mod itm;
+#[cfg(feature = "display")]
+pub mod shader;
 
 use crate::transfer::Curve;
 pub use formats::{Av1Mastering, ContentLight, HevcMastering, MasteringDisplay};

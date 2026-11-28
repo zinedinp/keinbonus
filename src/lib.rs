@@ -22,6 +22,7 @@
 //! | memory layouts | [`layout`] | P010 and friends, v210, Y410, AYUV, RGB10A2, FP16 |
 //! | display light, HLG OOTF, tone mapping | [`hdr`] | BT.2100, BT.2390, BT.2408 |
 //! | HDR10, HDR10+, HLG, Dolby Vision and their metadata | [`hdr::formats`] | ST 2086, CTA-861.3, ST 2094-40, Dolby Vision configuration record |
+//! | SDR to HDR and back, gamut modes, EDID colour, shader constants (feature `display`) | `hdr::itm`, `primaries::gamut`, `hdr::formats::edid`, `hdr::shader` | BT.2446 Method C, E-EDID 1.4, CTA-861.3 |
 //! | the whole pipeline | [`convert`] | |
 //! | fixed-point fast paths | [`fast`] | |
 //! | curve and gamut changes through tables, bit for bit | [`fast::light`] | |

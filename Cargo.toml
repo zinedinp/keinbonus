@@ -1,6 +1,6 @@
 [package]
 name = "keinbonus"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Zinedin Polic"]
 edition = "2024"
 rust-version = "1.100.0"
@@ -16,6 +16,9 @@ default = []
 # SIMD kernels for the fixed-point fast paths (`keinbonus::simd`), through
 # miraculix; bit for bit the scalar `keinbonus::fast` results.
 simd = ["dep:miraculix"]
+# For renderers presenting to a display: SDR to HDR (BT.2446 Method C),
+# gamut modes, EDID colour blocks, and the constants shaders need.
+display = []
 
 [dependencies]
 # Transcendental functions without std, and the same bits on every platform
@@ -31,7 +34,7 @@ many_single_char_names = "allow"
 
 # Only the architectures with kernels in `src/simd/` use it.
 [target.'cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64", target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
-miraculix = { version = "0.7.0", optional = true, default-features = false }
+miraculix = { version = "0.7.1", optional = true, default-features = false }
 
 [[example]]
 name = "throughput"
